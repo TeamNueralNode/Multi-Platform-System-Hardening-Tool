@@ -1,0 +1,1 @@
+"""Core module containing business logic and orchestration."""

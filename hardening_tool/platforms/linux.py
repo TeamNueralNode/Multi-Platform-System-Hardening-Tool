@@ -386,6 +386,66 @@ class LinuxPlatform(BasePlatform):
                 message=f"Error checking SSH configuration: {str(e)}"
             )
     
+    def _audit_ssh_password_auth(self, rule: HardeningRule) -> RuleResult:
+        """Audit SSH password authentication configuration."""
+        start_time = datetime.utcnow()
+        
+        try:
+            sshd_config_path = "/etc/ssh/sshd_config"
+            if not Path(sshd_config_path).exists():
+                return RuleResult(
+                    rule_id=rule.id,
+                    rule_title=rule.title,
+                    status=RuleStatus.NOT_APPLICABLE,
+                    severity=rule.severity,
+                    message="SSH daemon not installed"
+                )
+            
+            content = self.read_config_file(sshd_config_path)
+            
+            # Check for PasswordAuthentication setting
+            password_auth_pattern = r'^\s*PasswordAuthentication\s+(\S+)'
+            matches = re.findall(password_auth_pattern, content, re.MULTILINE | re.IGNORECASE)
+            
+            if matches:
+                last_setting = matches[-1].lower()  # Take the last occurrence
+                if last_setting in ['no', 'false']:
+                    status = RuleStatus.PASS
+                    message = f"Password authentication disabled: PasswordAuthentication {last_setting}"
+                else:
+                    status = RuleStatus.FAIL
+                    message = f"Password authentication enabled: PasswordAuthentication {last_setting}"
+            else:
+                # Default behavior is typically to allow password authentication
+                status = RuleStatus.FAIL
+                message = "PasswordAuthentication not explicitly set (defaults to enabled)"
+            
+            end_time = datetime.utcnow()
+            execution_time = int((end_time - start_time).total_seconds() * 1000)
+            
+            return RuleResult(
+                rule_id=rule.id,
+                rule_title=rule.title,
+                status=status,
+                severity=rule.severity,
+                execution_time_ms=execution_time,
+                message=message,
+                before_state={"password_authentication": matches[-1] if matches else None}
+            )
+            
+        except Exception as e:
+            end_time = datetime.utcnow()
+            execution_time = int((end_time - start_time).total_seconds() * 1000)
+            
+            return RuleResult(
+                rule_id=rule.id,
+                rule_title=rule.title,
+                status=RuleStatus.ERROR,
+                severity=rule.severity,
+                execution_time_ms=execution_time,
+                message=f"Error checking SSH password authentication: {str(e)}"
+            )
+    
     def _apply_ssh_rule(self, rule: HardeningRule, audit_result: RuleResult) -> RuleResult:
         """Apply SSH-specific rules."""
         if rule.id == "ssh_disable_root_login":

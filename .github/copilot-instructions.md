@@ -6,17 +6,29 @@ This is a **security-focused Python application** that automatically audits and 
 
 **Key Architecture Principles:**
 - **Platform abstraction**: `hardening_tool/platforms/` contains OS-specific implementations inheriting from `base.py`
-- **Rule-driven design**: YAML rule definitions in `hardening_tool/rules/definitions/` drive all hardening operations
+- **Rule-driven design**: YAML rule definitions auto-created in `hardening_tool/rules/definitions/` drive all hardening operations
 - **Database-backed**: SQLite stores all runs, results, and encrypted rollback data in `hardening_tool/database/`
 - **CLI-first**: Rich terminal interface via Click in `hardening_tool/cli.py` with future GUI support
+- **Pydantic models**: Strong typing throughout with `core/models.py` defining all data structures
 
 ## Development Workflow
 
+### Quick Start & Setup
+```bash
+# Development setup (Python 3.11+ required)
+pip install -e ".[dev]"
+python setup_and_test.py  # Comprehensive setup validator
+
+# Entry point is registered in pyproject.toml as:
+# [project.scripts] hardening-tool = "hardening_tool.cli:main"
+```
+
 ### Adding New Hardening Rules
-1. **Create YAML rule definitions** in `hardening_tool/rules/definitions/[platform]_[category].yaml`
-2. **Follow rule ID convention**: `{category}_{specific_action}` (e.g., `ssh_disable_root_login`)
-3. **Implement platform-specific logic** in respective `platforms/[platform].py` files
-4. **Test with**: `hardening-tool audit --rules your_rule_id` and `hardening-tool apply --dry-run --rules your_rule_id`
+1. **Rules auto-created**: First run creates sample rules in `rules/definitions/` if directory doesn't exist
+2. **YAML format**: Place rules in `[platform]_[category].yaml` files (e.g., `linux_ssh.yaml`, `windows_smb.yaml`)
+3. **Follow rule ID convention**: `{category}_{specific_action}` (e.g., `ssh_disable_root_login`)
+4. **Implement platform-specific logic** in respective `platforms/[platform].py` files  
+5. **Test with**: `hardening-tool audit --rules your_rule_id` and `hardening-tool apply --dry-run --rules your_rule_id`
 
 ### Platform Implementation Pattern
 Each platform class in `hardening_tool/platforms/` must implement:
@@ -38,6 +50,13 @@ def _audit_ssh_rule(self, rule: HardeningRule) -> RuleResult:
 - `rule_results` table contains individual rule outcomes with before/after state
 - `rollback_points` table holds encrypted backup data for system restoration
 - Use `DatabaseManager` class - never directly access SQLite
+
+### Critical Implementation Patterns
+- **Orchestrator Pattern**: `HardeningTool` class coordinates all operations via dependency injection
+- **Platform Factory**: `PlatformFactory.get_platform(os_type)` returns appropriate platform handler
+- **Rule Auto-Discovery**: `RuleLoader._create_sample_rules()` generates examples if `rules/definitions/` missing
+- **CLI Command Structure**: All commands check privileges with `check_privileges()` and validate OS with `validate_system()`
+- **Database Location**: Auto-detected based on OS (`~/.local/share/hardening-tool/` on Linux, `%APPDATA%/hardening-tool/` on Windows)
 
 ### Security Considerations
 - **Rollback data is encrypted** using Fernet (AES) in `database/manager.py`
@@ -102,9 +121,18 @@ rules:
 ### Development Setup
 ```bash
 pip install -e ".[dev]"  # Install with dev dependencies
-pre-commit install        # Setup code quality hooks
-pytest                    # Run test suite
+python setup_and_test.py  # Comprehensive setup validator
+pre-commit install        # Setup code quality hooks (not yet implemented)
+pytest                    # Run test suite (no tests directory exists yet)
 ```
+
+### Testing Approach
+- **No test directory exists yet** - tests need to be created
+- **Use `setup_and_test.py`**: Validates installation, imports, OS detection, and basic functionality
+- **Unit tests**: Mock platform operations, test rule logic in isolation
+- **Integration tests**: Use Docker containers for Linux testing
+- **Windows testing**: Requires Windows sandbox or VM environment
+- **Always test rollback functionality** - critical for production safety
 
 ## Security & Production Notes
 

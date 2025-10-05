@@ -61,6 +61,9 @@ Homepage = "https://github.com/amey/Multi-Platform_System_Hardening_Tool"
 Repository = "https://github.com/amey/Multi-Platform_System_Hardening_Tool.git"
 Issues = "https://github.com/amey/Multi-Platform_System_Hardening_Tool/issues"
 
+[tool.hatch.build.targets.wheel]
+packages = ["hardening_tool"]
+
 [tool.black]
 line-length = 88
 target-version = ['py311']

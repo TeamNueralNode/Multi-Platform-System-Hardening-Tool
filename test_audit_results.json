@@ -1,0 +1,61 @@
+{
+  "run_id": "f43c038d-b052-4576-9116-98b6331ab300",
+  "operation": "audit",
+  "started_at": "2025-10-05 15:07:52.446741",
+  "completed_at": "2025-10-05 15:07:52.451327",
+  "system_info": {
+    "os_type": "ubuntu",
+    "os_version": "24.04.3 LTS (Noble Numbat)",
+    "architecture": "x86_64",
+    "hostname": "ubuntu-24",
+    "kernel_version": "6.14.0-33-generic",
+    "detected_at": "2025-10-05 15:07:52.439287"
+  },
+  "categories": [],
+  "rule_ids": [],
+  "rule_results": [
+    {
+      "rule_id": "ssh_disable_root_login",
+      "rule_title": "Disable SSH Root Login",
+      "status": "fail",
+      "severity": "high",
+      "executed_at": "2025-10-05 15:07:52.451183",
+      "execution_time_ms": 0,
+      "before_state": {
+        "permit_root_login": null
+      },
+      "after_state": null,
+      "stdout": null,
+      "stderr": null,
+      "exit_code": null,
+      "message": "PermitRootLogin not explicitly set (defaults to enabled)",
+      "remediation_required": false,
+      "rollback_data": null
+    },
+    {
+      "rule_id": "ssh_disable_password_auth",
+      "rule_title": "Disable SSH Password Authentication",
+      "status": "pass",
+      "severity": "medium",
+      "executed_at": "2025-10-05 15:07:52.451322",
+      "execution_time_ms": 0,
+      "before_state": {
+        "password_authentication": "no"
+      },
+      "after_state": null,
+      "stdout": null,
+      "stderr": null,
+      "exit_code": null,
+      "message": "Password authentication disabled: PasswordAuthentication no",
+      "remediation_required": false,
+      "rollback_data": null
+    }
+  ],
+  "total_rules": 2,
+  "passed_rules": 1,
+  "failed_rules": 1,
+  "error_rules": 0,
+  "skipped_rules": 0,
+  "success": false,
+  "overall_score": 50.0
+}

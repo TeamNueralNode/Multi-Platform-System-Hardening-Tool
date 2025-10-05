@@ -47,6 +47,12 @@ class DatabaseManager:
         self.encryption_key = self._get_or_create_encryption_key()
         self.cipher = Fernet(self.encryption_key)
     
+    def _json_serializer(self, obj):
+        """JSON serializer for datetime objects."""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+    
     def initialize(self) -> None:
         """Initialize database schema."""
         with sqlite3.connect(self.db_path) as conn:
@@ -133,9 +139,9 @@ class DatabaseManager:
                 run.operation,
                 run.started_at.isoformat(),
                 run.completed_at.isoformat() if run.completed_at else None,
-                json.dumps(run.system_info.dict()),
-                json.dumps(run.categories),
-                json.dumps(run.rule_ids),
+                json.dumps(run.system_info.model_dump(), default=self._json_serializer),
+                json.dumps(run.categories, default=self._json_serializer),
+                json.dumps(run.rule_ids, default=self._json_serializer),
                 run.total_rules,
                 run.passed_rules,
                 run.failed_rules,
@@ -165,14 +171,14 @@ class DatabaseManager:
                     result.severity.value,
                     result.executed_at.isoformat(),
                     result.execution_time_ms,
-                    json.dumps(result.before_state) if result.before_state else None,
-                    json.dumps(result.after_state) if result.after_state else None,
+                    json.dumps(result.before_state, default=self._json_serializer) if result.before_state else None,
+                    json.dumps(result.after_state, default=self._json_serializer) if result.after_state else None,
                     result.stdout,
                     result.stderr,
                     result.exit_code,
                     result.message,
                     result.remediation_required,
-                    json.dumps(result.rollback_data) if result.rollback_data else None
+                    json.dumps(result.rollback_data, default=self._json_serializer) if result.rollback_data else None
                 ))
     
     def save_rollback_point(self, rollback_point: RollbackPoint) -> None:
@@ -188,11 +194,11 @@ class DatabaseManager:
             registry_backups_encrypted = None
             
             if rollback_point.config_backups:
-                config_json = json.dumps(rollback_point.config_backups)
+                config_json = json.dumps(rollback_point.config_backups, default=self._json_serializer)
                 config_backups_encrypted = self.cipher.encrypt(config_json.encode())
             
             if rollback_point.registry_backups:
-                registry_json = json.dumps(rollback_point.registry_backups)
+                registry_json = json.dumps(rollback_point.registry_backups, default=self._json_serializer)
                 registry_backups_encrypted = self.cipher.encrypt(registry_json.encode())
             
             conn.execute("""
@@ -205,12 +211,12 @@ class DatabaseManager:
                 rollback_point.rollback_id,
                 rollback_point.created_at.isoformat(),
                 rollback_point.run_id,
-                json.dumps(rollback_point.system_info.dict()),
+                json.dumps(rollback_point.system_info.model_dump(), default=self._json_serializer),
                 config_backups_encrypted,
                 registry_backups_encrypted,
-                json.dumps(rollback_point.service_states),
+                json.dumps(rollback_point.service_states, default=self._json_serializer),
                 rollback_point.description,
-                json.dumps(rollback_point.file_checksums),
+                json.dumps(rollback_point.file_checksums, default=self._json_serializer),
                 rollback_point.encrypted
             ))
     

@@ -1,0 +1,18 @@
+rules:
+- categories:
+  - smb
+  - network
+  cis_benchmark: 18.3.1
+  description: Disable the insecure SMBv1 protocol to prevent exploitation
+  expected_values:
+    SMB1Protocol: Disabled
+  id: smb_disable_v1
+  ntro_reference: 'Annexure-B: Network Protocol Security'
+  platforms:
+  - windows
+  remediation_steps:
+  - Open PowerShell as Administrator
+  - 'Run: Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart'
+  - Restart system when convenient
+  severity: critical
+  title: Disable SMBv1 Protocol

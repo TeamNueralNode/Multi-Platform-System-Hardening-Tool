@@ -22,14 +22,22 @@
 ## 🏗️ Architecture
 
 ```text
-hardening_tool/
-├── core/              # Core orchestration and business logic
-├── platforms/         # OS-specific hardening modules
-├── database/          # SQLite schemas and data models
-├── reporting/         # PDF generation and templates
-├── rules/             # Hardening rule definitions (YAML)
-├── gui/              # Optional PySide6 GUI (future)
-└── utils/            # Shared utilities and helpers
+Multi-Platform-System-Hardening-Tool/
+├── hardening_tool/           # Core Python package
+│   ├── core/                # Orchestration and business logic
+│   ├── platforms/           # OS-specific hardening modules
+│   ├── database/            # SQLite schemas and data models
+│   ├── reporting/           # PDF generation and templates
+│   ├── rules/               # Rule loading and management
+│   └── utils/               # Shared utilities and helpers
+├── scripts/                 # Helper scripts organized by platform
+│   ├── linux/              # Linux-specific shell scripts
+│   ├── windows/            # Windows PowerShell scripts
+│   └── testing/            # Test automation scripts
+├── utilities/              # Standalone utility scripts
+├── docs/                   # Project documentation
+├── gui.py                  # Flask web interface
+└── setup_and_test.py       # Automated setup and validation
 ```
 
 ## 🛠️ Installation

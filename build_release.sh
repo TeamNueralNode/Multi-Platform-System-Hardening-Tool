@@ -55,7 +55,7 @@ echo ""
 # ============================================================================
 
 log() {
-    echo "[$(date +'%H:%M:%S')] $*"
+    echo "[$(date +'%H:%M:%S')] $*" >&2
 }
 
 error() {
@@ -96,7 +96,7 @@ create_spec_file() {
     local platform=$1
     local spec_file="${BUILD_DIR}/hardening-tool-${platform}.spec"
     
-    log "Creating PyInstaller spec file for ${platform}: ${spec_file}"
+    log "Creating PyInstaller spec file for ${platform}: ${spec_file}" >&2
     
     cat > "${spec_file}" << EOF
 # -*- mode: python ; coding: utf-8 -*-
@@ -652,7 +652,7 @@ create_checksums() {
     echo "# Commit: ${COMMIT_HASH}" >> "${checksums_file}"
     echo "" >> "${checksums_file}"
     
-    for file in *.tar.gz *.zip 2>/dev/null; do
+    for file in *.tar.gz *.zip; do
         if [[ -f "$file" ]]; then
             if command -v sha256sum >/dev/null 2>&1; then
                 sha256sum "$file" >> "${checksums_file}"
@@ -660,7 +660,7 @@ create_checksums() {
                 shasum -a 256 "$file" >> "${checksums_file}"
             fi
         fi
-    done
+    done 2>/dev/null
     
     log "Checksums created: ${RELEASE_DIR}/${checksums_file} ✓"
     
@@ -685,12 +685,12 @@ EOF
     
     # List all release files
     cd "${RELEASE_DIR}"
-    for file in *.tar.gz *.zip 2>/dev/null; do
+    for file in *.tar.gz *.zip; do
         if [[ -f "$file" ]]; then
             local size=$(du -h "$file" | cut -f1)
             echo "- \`$file\` (${size})" >> "${release_notes}"
         fi
-    done
+    done 2>/dev/null
     
     cat >> "${release_notes}" << EOF
 

@@ -185,12 +185,27 @@ test_audit_results.json
 test_output.json
 test_*.json
 *_test_results.*
+audit_*.json
+compliance_*.json
+shadow_audit_*.json
 
 # Database files
+hardening_tool.db
 ~/.local/share/hardening-tool/
 *.db-journal
+
+# Generated rules directory
+rules/
+
+# Release artifacts
+releases/
+build/
+dist/
 
 # Backup files
 *.bak
 *~
 .#*
+
+# Temporary HTML reports
+report_template.html

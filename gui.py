@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Minimal Flask GUI for Multi-Platform System Hardening Tool
-Provides web interface for rule management, audit/apply operations, and reporting
+Web GUI for Multi-Platform System Hardening Tool.
+
+Provides web interface for rule management, audit/apply operations, and reporting.
 """
 
 import json

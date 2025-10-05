@@ -179,3 +179,18 @@ test_outputs/
 # Development artifacts
 logs/
 *.tmp.html
+
+# Project-specific temporary files
+test_audit_results.json
+test_output.json
+test_*.json
+*_test_results.*
+
+# Database files
+~/.local/share/hardening-tool/
+*.db-journal
+
+# Backup files
+*.bak
+*~
+.#*

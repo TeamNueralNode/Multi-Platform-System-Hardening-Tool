@@ -1,0 +1,1 @@
+# Tests for Multi-Platform System Hardening Tool

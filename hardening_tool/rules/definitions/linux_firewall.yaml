@@ -1,0 +1,150 @@
+rules:
+# UFW Firewall Rules for Ubuntu/Debian
+- id: firewall_enable_ufw
+  title: Enable UFW Firewall
+  description: Enable the Uncomplicated Firewall (UFW) for basic network protection
+  platforms:
+    - ubuntu
+    - debian
+  categories:
+    - firewall
+    - network
+  severity: high
+  cis_benchmark: "3.5.1.1"
+  ntro_reference: "Network Security Controls"
+  backup_files:
+    - /etc/ufw/ufw.conf
+  config_files:
+    - /etc/ufw/ufw.conf
+  audit_command: "ufw status | grep -i 'Status: active'"
+  apply_command: "ufw --force enable"
+  expected_values:
+    status: "active"
+  remediation_steps:
+    - "Run: sudo ufw enable"
+    - "Verify with: sudo ufw status"
+
+- id: firewall_default_deny_incoming
+  title: Set UFW Default Deny Incoming
+  description: Set default policy to deny all incoming connections
+  platforms:
+    - ubuntu
+    - debian
+  categories:
+    - firewall
+    - network
+  severity: high
+  cis_benchmark: "3.5.1.2"
+  audit_command: "ufw status verbose | grep 'Default: deny (incoming)'"
+  apply_command: "ufw default deny incoming"
+  expected_values:
+    default_incoming: "deny"
+
+- id: firewall_default_allow_outgoing
+  title: Set UFW Default Allow Outgoing
+  description: Set default policy to allow outgoing connections
+  platforms:
+    - ubuntu
+    - debian
+  categories:
+    - firewall
+    - network
+  severity: medium
+  cis_benchmark: "3.5.1.3"
+  audit_command: "ufw status verbose | grep 'Default: allow (outgoing)'"
+  apply_command: "ufw default allow outgoing"
+
+- id: firewall_limit_ssh
+  title: Rate Limit SSH Connections
+  description: Enable rate limiting for SSH to prevent brute force attacks
+  platforms:
+    - ubuntu
+    - debian
+  categories:
+    - firewall
+    - ssh
+    - authentication
+  severity: high
+  cis_benchmark: "5.2.15"
+  audit_command: "ufw status numbered | grep -i 'limit.*ssh'"
+  apply_command: "ufw limit ssh"
+
+# IPTables Rules for CentOS/RHEL
+- id: firewall_enable_iptables
+  title: Enable IPTables Service
+  description: Ensure IPTables firewall service is active and enabled
+  platforms:
+    - centos
+    - rhel
+  categories:
+    - firewall
+    - network
+  severity: high
+  cis_benchmark: "3.5.2.1"
+  audit_command: "systemctl is-active iptables"
+  apply_command: "systemctl enable iptables && systemctl start iptables"
+  expected_values:
+    service_status: "active"
+
+- id: firewall_drop_invalid_packets
+  title: Drop Invalid Packets
+  description: Configure iptables to drop packets with invalid connection state
+  platforms:
+    - centos
+    - rhel
+    - ubuntu
+  categories:
+    - firewall
+    - network
+  severity: high
+  cis_benchmark: "3.5.2.2"
+  audit_command: "iptables -L INPUT -v -n | grep -i 'DROP.*INVALID'"
+  apply_command: "iptables -A INPUT -m conntrack --ctstate INVALID -j DROP"
+
+- id: firewall_allow_established
+  title: Allow Established Connections
+  description: Allow packets for established and related connections
+  platforms:
+    - centos
+    - rhel
+    - ubuntu
+  categories:
+    - firewall
+    - network
+  severity: medium
+  cis_benchmark: "3.5.2.3"
+  audit_command: "iptables -L INPUT -v -n | grep -i 'ACCEPT.*ESTABLISHED'"
+  apply_command: "iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"
+
+- id: firewall_allow_loopback
+  title: Allow Loopback Traffic
+  description: Ensure loopback traffic is configured properly
+  platforms:
+    - centos
+    - rhel
+    - ubuntu
+  categories:
+    - firewall
+    - network
+  severity: medium
+  cis_benchmark: "3.5.2.4"
+  audit_command: "iptables -L INPUT -v -n | grep 'ACCEPT.*lo'"
+  apply_command: "iptables -A INPUT -i lo -j ACCEPT && iptables -A OUTPUT -o lo -j ACCEPT"
+
+- id: firewall_deny_all_default
+  title: Set Default Deny Policy
+  description: Set default policy for INPUT and FORWARD chains to DROP
+  platforms:
+    - centos
+    - rhel
+    - ubuntu
+  categories:
+    - firewall
+    - network
+  severity: critical
+  cis_benchmark: "3.5.2.5"
+  audit_command: "iptables -L | grep 'policy DROP'"
+  apply_command: "iptables -P INPUT DROP && iptables -P FORWARD DROP"
+  expected_values:
+    input_policy: "DROP"
+    forward_policy: "DROP"

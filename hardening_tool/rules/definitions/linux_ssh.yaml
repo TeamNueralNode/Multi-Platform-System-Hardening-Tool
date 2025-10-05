@@ -37,3 +37,99 @@ rules:
   - centos
   severity: medium
   title: Disable SSH Password Authentication
+
+- apply_command: sed -i 's/^#*PermitEmptyPasswords.*/PermitEmptyPasswords no/' /etc/ssh/sshd_config && systemctl reload sshd
+  audit_command: grep -E '^\s*PermitEmptyPasswords\s+no' /etc/ssh/sshd_config
+  categories:
+  - ssh
+  - authentication
+  cis_benchmark: 5.2.9
+  config_files:
+  - /etc/ssh/sshd_config
+  description: Prevent SSH login with empty passwords
+  id: ssh_disable_empty_passwords
+  platforms:
+  - ubuntu
+  - centos
+  severity: high
+  title: Disable SSH Empty Password Authentication
+
+- apply_command: sed -i 's/^#*X11Forwarding.*/X11Forwarding no/' /etc/ssh/sshd_config && systemctl reload sshd
+  audit_command: grep -E '^\s*X11Forwarding\s+no' /etc/ssh/sshd_config
+  categories:
+  - ssh
+  - forwarding
+  cis_benchmark: 5.2.6
+  config_files:
+  - /etc/ssh/sshd_config
+  description: Disable X11 forwarding to prevent GUI hijacking
+  id: ssh_disable_x11_forwarding
+  platforms:
+  - ubuntu
+  - centos
+  severity: medium
+  title: Disable SSH X11 Forwarding
+
+- apply_command: sed -i 's/^#*MaxAuthTries.*/MaxAuthTries 4/' /etc/ssh/sshd_config && systemctl reload sshd
+  audit_command: grep -E '^\s*MaxAuthTries\s+[1-4]' /etc/ssh/sshd_config
+  categories:
+  - ssh
+  - authentication
+  cis_benchmark: 5.2.5
+  config_files:
+  - /etc/ssh/sshd_config
+  description: Limit authentication attempts to prevent brute force
+  id: ssh_limit_auth_tries
+  platforms:
+  - ubuntu
+  - centos
+  severity: medium
+  title: Limit SSH Authentication Attempts
+
+- apply_command: sed -i 's/^#*LoginGraceTime.*/LoginGraceTime 60/' /etc/ssh/sshd_config && systemctl reload sshd
+  audit_command: grep -E '^\s*LoginGraceTime\s+[0-9]' /etc/ssh/sshd_config
+  categories:
+  - ssh
+  - timeout
+  cis_benchmark: 5.2.13
+  config_files:
+  - /etc/ssh/sshd_config
+  description: Set login timeout to prevent hanging connections
+  id: ssh_set_login_grace_time
+  platforms:
+  - ubuntu
+  - centos
+  severity: medium
+  title: Configure SSH Login Grace Time
+
+- apply_command: sed -i 's/^#*HostbasedAuthentication.*/HostbasedAuthentication no/' /etc/ssh/sshd_config && systemctl reload sshd
+  audit_command: grep -E '^\s*HostbasedAuthentication\s+no' /etc/ssh/sshd_config
+  categories:
+  - ssh
+  - authentication
+  cis_benchmark: 5.2.7
+  config_files:
+  - /etc/ssh/sshd_config
+  description: Disable host-based authentication for better security
+  id: ssh_disable_host_based_auth
+  platforms:
+  - ubuntu
+  - centos
+  severity: medium
+  title: Disable SSH Host-Based Authentication
+
+- apply_command: sed -i 's/^#*IgnoreRhosts.*/IgnoreRhosts yes/' /etc/ssh/sshd_config && systemctl reload sshd
+  audit_command: grep -E '^\s*IgnoreRhosts\s+yes' /etc/ssh/sshd_config
+  categories:
+  - ssh
+  - authentication
+  cis_benchmark: 5.2.8
+  config_files:
+  - /etc/ssh/sshd_config
+  description: Ignore rhosts files for enhanced security
+  id: ssh_ignore_rhosts
+  platforms:
+  - ubuntu
+  - centos
+  severity: medium
+  title: Configure SSH to Ignore Rhosts Files

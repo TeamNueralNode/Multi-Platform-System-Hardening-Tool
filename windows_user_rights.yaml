@@ -1,0 +1,238 @@
+rules:
+- id: user_right_access_credential_manager
+  title: "Access Credential Manager as a trusted caller"
+  description: "Ensure no users have the right to access Credential Manager as a trusted caller"
+  platforms: ["windows"]
+  categories: ["user_rights", "access_control", "credential_protection"]
+  severity: "high"
+  cis_benchmark: "2.2.1"
+  desired_value: ["No One"]
+  manual: false
+  check_command: |
+    $userRight = "SeTrustedCredManAccessPrivilege"
+    $tempFile = "$env:TEMP\secedit_export.inf"
+    secedit /export /cfg $tempFile /quiet
+    $line = Select-String "$userRight = " $tempFile
+    if ($line) {
+      $users = ($line.Line -split "=")[1].Trim()
+      if ($users -eq "" -or $users -eq " ") { "No One" } else { $users }
+    } else { "No One" }
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+  remediate_command: |
+    $tempFile = "$env:TEMP\user_rights_temp.inf"
+    @"
+[Unicode]
+Unicode=yes
+[System Access]
+[Privilege Rights]
+SeTrustedCredManAccessPrivilege = 
+[Version]
+signature="`$CHICAGO`$"
+Revision=1
+"@ | Out-File -FilePath $tempFile -Encoding Unicode
+    secedit /configure /cfg $tempFile /db secedit.sdb /areas USER_RIGHTS /quiet
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+
+- id: user_right_network_access
+  title: "Access this computer from the network"
+  description: "Restrict network access to Administrators and Remote Desktop Users only"
+  platforms: ["windows"]
+  categories: ["user_rights", "network", "access_control"]
+  severity: "high"
+  cis_benchmark: "2.2.2"
+  desired_value: ["Administrators", "Remote Desktop Users"]
+  manual: false
+  check_command: |
+    $userRight = "SeNetworkLogonRight"
+    $tempFile = "$env:TEMP\secedit_export.inf"
+    secedit /export /cfg $tempFile /quiet
+    $line = Select-String "$userRight = " $tempFile
+    if ($line) {
+      $users = ($line.Line -split "=")[1].Trim()
+      if ($users -eq "" -or $users -eq " ") { "No One" } else { $users -split "," | ForEach-Object { $_.Trim() } }
+    } else { @() }
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+  remediate_command: |
+    $tempFile = "$env:TEMP\user_rights_temp.inf"
+    @"
+[Unicode]
+Unicode=yes
+[System Access]
+[Privilege Rights]
+SeNetworkLogonRight = *S-1-5-32-544,*S-1-5-32-555
+[Version]
+signature="`$CHICAGO`$"
+Revision=1
+"@ | Out-File -FilePath $tempFile -Encoding Unicode
+    secedit /configure /cfg $tempFile /db secedit.sdb /areas USER_RIGHTS /quiet
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+
+- id: user_right_adjust_memory_quotas
+  title: "Adjust memory quotas for a process"
+  description: "Restrict memory quota adjustment to system services and Administrators"
+  platforms: ["windows"]
+  categories: ["user_rights", "system", "process_management"]
+  severity: "medium"
+  cis_benchmark: "2.2.3"
+  desired_value: ["Administrators", "LOCAL SERVICE", "NETWORK SERVICE"]
+  manual: false
+  check_command: |
+    $userRight = "SeIncreaseQuotaPrivilege"
+    $tempFile = "$env:TEMP\secedit_export.inf"
+    secedit /export /cfg $tempFile /quiet
+    $line = Select-String "$userRight = " $tempFile
+    if ($line) {
+      $users = ($line.Line -split "=")[1].Trim()
+      if ($users -eq "" -or $users -eq " ") { "No One" } else { $users -split "," | ForEach-Object { $_.Trim() } }
+    } else { @() }
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+  remediate_command: |
+    $tempFile = "$env:TEMP\user_rights_temp.inf"
+    @"
+[Unicode]
+Unicode=yes
+[System Access]
+[Privilege Rights]
+SeIncreaseQuotaPrivilege = *S-1-5-32-544,*S-1-5-19,*S-1-5-20
+[Version]
+signature="`$CHICAGO`$"
+Revision=1
+"@ | Out-File -FilePath $tempFile -Encoding Unicode
+    secedit /configure /cfg $tempFile /db secedit.sdb /areas USER_RIGHTS /quiet
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+
+- id: user_right_logon_locally
+  title: "Allow log on locally"
+  description: "Restrict local logon to Administrators and Users groups"
+  platforms: ["windows"]
+  categories: ["user_rights", "authentication", "local_access"]
+  severity: "high"
+  cis_benchmark: "2.2.4"
+  desired_value: ["Administrators", "Users"]
+  manual: false
+  check_command: |
+    $userRight = "SeInteractiveLogonRight"
+    $tempFile = "$env:TEMP\secedit_export.inf"
+    secedit /export /cfg $tempFile /quiet
+    $line = Select-String "$userRight = " $tempFile
+    if ($line) {
+      $users = ($line.Line -split "=")[1].Trim()
+      if ($users -eq "" -or $users -eq " ") { "No One" } else { $users -split "," | ForEach-Object { $_.Trim() } }
+    } else { @() }
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+  remediate_command: |
+    $tempFile = "$env:TEMP\user_rights_temp.inf"
+    @"
+[Unicode]
+Unicode=yes
+[System Access]
+[Privilege Rights]
+SeInteractiveLogonRight = *S-1-5-32-544,*S-1-5-32-545
+[Version]
+signature="`$CHICAGO`$"
+Revision=1
+"@ | Out-File -FilePath $tempFile -Encoding Unicode
+    secedit /configure /cfg $tempFile /db secedit.sdb /areas USER_RIGHTS /quiet
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+
+- id: user_right_backup_files
+  title: "Back up files and directories"
+  description: "Restrict backup privileges to Administrators only"
+  platforms: ["windows"]
+  categories: ["user_rights", "backup", "file_system"]
+  severity: "high"
+  cis_benchmark: "2.2.5"
+  desired_value: ["Administrators"]
+  manual: false
+  check_command: |
+    $userRight = "SeBackupPrivilege"
+    $tempFile = "$env:TEMP\secedit_export.inf"
+    secedit /export /cfg $tempFile /quiet
+    $line = Select-String "$userRight = " $tempFile
+    if ($line) {
+      $users = ($line.Line -split "=")[1].Trim()
+      if ($users -eq "" -or $users -eq " ") { "No One" } else { $users -split "," | ForEach-Object { $_.Trim() } }
+    } else { @() }
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+  remediate_command: |
+    $tempFile = "$env:TEMP\user_rights_temp.inf"
+    @"
+[Unicode]
+Unicode=yes
+[System Access]
+[Privilege Rights]
+SeBackupPrivilege = *S-1-5-32-544
+[Version]
+signature="`$CHICAGO`$"
+Revision=1
+"@ | Out-File -FilePath $tempFile -Encoding Unicode
+    secedit /configure /cfg $tempFile /db secedit.sdb /areas USER_RIGHTS /quiet
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+
+- id: user_right_change_system_time
+  title: "Change the system time"
+  description: "Restrict system time changes to Administrators and LOCAL SERVICE"
+  platforms: ["windows"]
+  categories: ["user_rights", "system", "time_management"]
+  severity: "medium"
+  cis_benchmark: "2.2.6"
+  desired_value: ["Administrators", "LOCAL SERVICE"]
+  manual: false
+  check_command: |
+    $userRight = "SeSystemtimePrivilege"
+    $tempFile = "$env:TEMP\secedit_export.inf"
+    secedit /export /cfg $tempFile /quiet
+    $line = Select-String "$userRight = " $tempFile
+    if ($line) {
+      $users = ($line.Line -split "=")[1].Trim()
+      if ($users -eq "" -or $users -eq " ") { "No One" } else { $users -split "," | ForEach-Object { $_.Trim() } }
+    } else { @() }
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+  remediate_command: |
+    $tempFile = "$env:TEMP\user_rights_temp.inf"
+    @"
+[Unicode]
+Unicode=yes
+[System Access]
+[Privilege Rights]
+SeSystemtimePrivilege = *S-1-5-32-544,*S-1-5-19
+[Version]
+signature="`$CHICAGO`$"
+Revision=1
+"@ | Out-File -FilePath $tempFile -Encoding Unicode
+    secedit /configure /cfg $tempFile /db secedit.sdb /areas USER_RIGHTS /quiet
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+
+- id: user_right_change_time_zone
+  title: "Change the time zone"
+  description: "Allow time zone changes for Administrators, LOCAL SERVICE, and Users"
+  platforms: ["windows"]
+  categories: ["user_rights", "system", "time_management"]
+  severity: "low"
+  cis_benchmark: "2.2.7"
+  desired_value: ["Administrators", "LOCAL SERVICE", "Users"]
+  manual: false
+  check_command: |
+    $userRight = "SeTimeZonePrivilege"
+    $tempFile = "$env:TEMP\secedit_export.inf"
+    secedit /export /cfg $tempFile /quiet
+    $line = Select-String "$userRight = " $tempFile
+    if ($line) {
+      $users = ($line.Line -split "=")[1].Trim()
+      if ($users -eq "" -or $users -eq " ") { "No One" } else { $users -split "," | ForEach-Object { $_.Trim() } }
+    } else { @() }
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+  remediate_command: |
+    $tempFile = "$env:TEMP\user_rights_temp.inf"
+    @"
+[Unicode]
+Unicode=yes
+[System Access]
+[Privilege Rights]
+SeTimeZonePrivilege = *S-1-5-32-544,*S-1-5-19,*S-1-5-32-545
+[Version]
+signature="`$CHICAGO`$"
+Revision=1
+"@ | Out-File -FilePath $tempFile -Encoding Unicode
+    secedit /configure /cfg $tempFile /db secedit.sdb /areas USER_RIGHTS /quiet
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue

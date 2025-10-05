@@ -1,0 +1,244 @@
+rules:
+# Password Policy Rules
+- id: password_min_length
+  title: Set Minimum Password Length
+  description: Enforce minimum password length of 12 characters
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - authentication
+    - passwords
+  severity: high
+  cis_benchmark: "5.4.1.1"
+  ntro_reference: "Password Policy Controls"
+  backup_files:
+    - /etc/security/pwquality.conf
+  config_files:
+    - /etc/security/pwquality.conf
+  audit_command: "grep -E '^minlen\\s*=\\s*([12-9][0-9]|1[2-9])' /etc/security/pwquality.conf"
+  apply_command: "sed -i '/^minlen/d' /etc/security/pwquality.conf && echo 'minlen = 12' >> /etc/security/pwquality.conf"
+  expected_values:
+    minlen: "12"
+
+- id: password_complexity
+  title: Enable Password Complexity
+  description: Require mixed case, numbers, and special characters in passwords
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - authentication
+    - passwords
+  severity: high
+  cis_benchmark: "5.4.1.2"
+  backup_files:
+    - /etc/security/pwquality.conf
+  config_files:
+    - /etc/security/pwquality.conf
+  audit_command: "grep -E '^(minclass|dcredit|ucredit|lcredit|ocredit)' /etc/security/pwquality.conf"
+  apply_command: |
+    sed -i '/^minclass/d; /^dcredit/d; /^ucredit/d; /^lcredit/d; /^ocredit/d' /etc/security/pwquality.conf
+    echo -e 'minclass = 4\ndcredit = -1\nucredit = -1\nlcredit = -1\nocredit = -1' >> /etc/security/pwquality.conf
+
+- id: password_max_age
+  title: Set Maximum Password Age
+  description: Set maximum password age to 90 days
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - authentication
+    - passwords
+  severity: medium
+  cis_benchmark: "5.4.1.3"
+  backup_files:
+    - /etc/login.defs
+  config_files:
+    - /etc/login.defs
+  audit_command: "grep -E '^PASS_MAX_DAYS\\s+([1-8][0-9]|90)$' /etc/login.defs"
+  apply_command: "sed -i 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS\t90/' /etc/login.defs"
+  expected_values:
+    PASS_MAX_DAYS: "90"
+
+- id: password_min_age
+  title: Set Minimum Password Age
+  description: Set minimum password age to 1 day to prevent rapid password changes
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - authentication
+    - passwords
+  severity: medium
+  cis_benchmark: "5.4.1.4"
+  backup_files:
+    - /etc/login.defs
+  config_files:
+    - /etc/login.defs
+  audit_command: "grep -E '^PASS_MIN_DAYS\\s+[1-9]' /etc/login.defs"
+  apply_command: "sed -i 's/^PASS_MIN_DAYS.*/PASS_MIN_DAYS\t1/' /etc/login.defs"
+
+- id: password_warn_age
+  title: Set Password Warning Period
+  description: Set password expiration warning to 7 days
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - authentication
+    - passwords
+  severity: low
+  cis_benchmark: "5.4.1.5"
+  backup_files:
+    - /etc/login.defs
+  config_files:
+    - /etc/login.defs
+  audit_command: "grep -E '^PASS_WARN_AGE\\s+7' /etc/login.defs"
+  apply_command: "sed -i 's/^PASS_WARN_AGE.*/PASS_WARN_AGE\t7/' /etc/login.defs"
+
+# Account Lockout Rules
+- id: account_lockout_pam
+  title: Configure Account Lockout Policy
+  description: Lock accounts after 5 failed login attempts for 900 seconds
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - authentication
+    - access_control
+  severity: high
+  cis_benchmark: "5.3.2"
+  backup_files:
+    - /etc/pam.d/common-auth
+    - /etc/pam.d/system-auth
+  config_files:
+    - /etc/pam.d/common-auth
+    - /etc/pam.d/system-auth
+  audit_command: "grep -E 'pam_faillock\\.so.*deny=5.*unlock_time=900' /etc/pam.d/common-auth /etc/pam.d/system-auth"
+  apply_command: |
+    if [ -f /etc/pam.d/common-auth ]; then
+      sed -i '/pam_faillock/d' /etc/pam.d/common-auth
+      sed -i '/^auth.*pam_unix.so/i auth required pam_faillock.so preauth deny=5 unlock_time=900' /etc/pam.d/common-auth
+      sed -i '/^auth.*pam_unix.so/a auth [default=die] pam_faillock.so authfail deny=5 unlock_time=900' /etc/pam.d/common-auth
+    fi
+
+# User Account Controls
+- id: disable_unused_users
+  title: Disable Unused System Accounts
+  description: Ensure system accounts are non-login and have nologin shell
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - access_control
+  severity: medium
+  cis_benchmark: "5.5.2"
+  audit_command: "awk -F: '($1!=\"root\" && $1!=\"sync\" && $1!=\"shutdown\" && $1!=\"halt\" && $1!~/^\\+/ && $3<1000 && $7!=\"/usr/sbin/nologin\" && $7!=\"/bin/false\") {print}' /etc/passwd"
+  apply_command: |
+    awk -F: '($1!="root" && $1!="sync" && $1!="shutdown" && $1!="halt" && $1!~/^\+/ && $3<1000 && $7!="/usr/sbin/nologin" && $7!="/bin/false") {print "usermod -s /usr/sbin/nologin " $1}' /etc/passwd | bash
+
+- id: empty_password_accounts
+  title: Check for Empty Password Accounts
+  description: Ensure no accounts have empty passwords
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - authentication
+    - passwords
+  severity: critical
+  cis_benchmark: "5.5.3"
+  audit_command: "awk -F: '($2 == \"\") {print $1}' /etc/shadow"
+  apply_command: "awk -F: '($2 == \"\") {print \"passwd -l \" $1}' /etc/shadow | bash"
+
+- id: default_user_umask
+  title: Set Default User Umask
+  description: Set default umask to 027 for better file permissions
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - file_permissions
+    - access_control
+  severity: medium
+  cis_benchmark: "5.5.4"
+  backup_files:
+    - /etc/bash.bashrc
+    - /etc/profile
+  config_files:
+    - /etc/bash.bashrc
+    - /etc/profile
+  audit_command: "grep -E '^umask\\s+027' /etc/bash.bashrc /etc/profile"
+  apply_command: |
+    echo 'umask 027' >> /etc/bash.bashrc
+    echo 'umask 027' >> /etc/profile
+
+# Sudo Configuration
+- id: sudo_timeout
+  title: Configure Sudo Timeout
+  description: Set sudo authentication timeout to 15 minutes
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - sudo
+    - access_control
+  severity: medium
+  cis_benchmark: "5.3.3"
+  backup_files:
+    - /etc/sudoers
+  config_files:
+    - /etc/sudoers
+  audit_command: "grep -E '^Defaults\\s+timestamp_timeout=15' /etc/sudoers"
+  apply_command: "echo 'Defaults timestamp_timeout=15' >> /etc/sudoers.d/timeout"
+
+- id: sudo_log_commands
+  title: Enable Sudo Command Logging
+  description: Log all sudo commands for security auditing
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - users
+    - sudo
+    - logging
+    - auditing
+  severity: high
+  cis_benchmark: "5.3.4"
+  backup_files:
+    - /etc/sudoers
+  audit_command: "grep -E '^Defaults\\s+logfile=' /etc/sudoers /etc/sudoers.d/*"
+  apply_command: "echo 'Defaults logfile=/var/log/sudo.log' >> /etc/sudoers.d/logging"

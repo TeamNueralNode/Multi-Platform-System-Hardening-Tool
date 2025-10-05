@@ -1,0 +1,298 @@
+rules:
+# User Account Control (UAC) Settings
+- id: uac_enable_admin_approval
+  title: Enable UAC Admin Approval Mode
+  description: Require administrator approval for elevated privileges
+  platforms:
+    - windows
+  categories:
+    - uac
+    - access_control
+    - privilege_escalation
+  severity: high
+  cis_benchmark: "2.3.17.1"
+  ntro_reference: "User Account Control Settings"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System' -Name EnableLUA"
+  apply_command: "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System' -Name EnableLUA -Value 1"
+  registry_keys:
+    - path: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System"
+      name: "EnableLUA"
+      value: 1
+      type: "DWORD"
+
+- id: uac_prompt_secure_desktop
+  title: UAC Prompt on Secure Desktop
+  description: Ensure UAC prompts occur on secure desktop
+  platforms:
+    - windows
+  categories:
+    - uac
+    - security
+    - desktop_protection
+  severity: high
+  cis_benchmark: "2.3.17.2"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System' -Name PromptOnSecureDesktop"
+  apply_command: "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System' -Name PromptOnSecureDesktop -Value 1"
+  registry_keys:
+    - path: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System"
+      name: "PromptOnSecureDesktop"
+      value: 1
+      type: "DWORD"
+
+# Password and Account Policies
+- id: password_complexity_enabled
+  title: Enable Password Complexity Requirements
+  description: Enforce complex password requirements
+  platforms:
+    - windows
+  categories:
+    - passwords
+    - authentication
+    - policy
+  severity: high
+  cis_benchmark: "1.1.2"
+  audit_command: "Get-ADDefaultDomainPasswordPolicy | Select-Object ComplexityEnabled"
+  apply_command: "Set-ADDefaultDomainPasswordPolicy -ComplexityEnabled $true"
+
+- id: password_minimum_length
+  title: Set Minimum Password Length
+  description: Set minimum password length to 12 characters
+  platforms:
+    - windows
+  categories:
+    - passwords
+    - authentication
+    - policy
+  severity: high
+  cis_benchmark: "1.1.3"
+  audit_command: "Get-ADDefaultDomainPasswordPolicy | Select-Object MinPasswordLength"
+  apply_command: "Set-ADDefaultDomainPasswordPolicy -MinPasswordLength 12"
+
+- id: password_max_age
+  title: Set Maximum Password Age
+  description: Set maximum password age to 90 days
+  platforms:
+    - windows
+  categories:
+    - passwords
+    - authentication
+    - policy
+  severity: medium
+  cis_benchmark: "1.1.4"
+  audit_command: "Get-ADDefaultDomainPasswordPolicy | Select-Object MaxPasswordAge"
+  apply_command: "Set-ADDefaultDomainPasswordPolicy -MaxPasswordAge (New-TimeSpan -Days 90)"
+
+- id: account_lockout_threshold
+  title: Set Account Lockout Threshold
+  description: Lock accounts after 5 invalid login attempts
+  platforms:
+    - windows
+  categories:
+    - authentication
+    - account_lockout
+    - brute_force_protection
+  severity: high
+  cis_benchmark: "1.2.1"
+  audit_command: "Get-ADDefaultDomainPasswordPolicy | Select-Object LockoutThreshold"
+  apply_command: "Set-ADDefaultDomainPasswordPolicy -LockoutThreshold 5"
+
+# Windows Firewall Configuration
+- id: firewall_enable_domain
+  title: Enable Windows Firewall - Domain Profile
+  description: Enable Windows Firewall for Domain network profile
+  platforms:
+    - windows
+  categories:
+    - firewall
+    - network_security
+    - domain
+  severity: critical
+  cis_benchmark: "9.1.1"
+  audit_command: "Get-NetFirewallProfile -Profile Domain | Select-Object Enabled"
+  apply_command: "Set-NetFirewallProfile -Profile Domain -Enabled True"
+
+- id: firewall_enable_private
+  title: Enable Windows Firewall - Private Profile
+  description: Enable Windows Firewall for Private network profile
+  platforms:
+    - windows
+  categories:
+    - firewall
+    - network_security
+    - private
+  severity: critical
+  cis_benchmark: "9.1.2"
+  audit_command: "Get-NetFirewallProfile -Profile Private | Select-Object Enabled"
+  apply_command: "Set-NetFirewallProfile -Profile Private -Enabled True"
+
+- id: firewall_enable_public
+  title: Enable Windows Firewall - Public Profile
+  description: Enable Windows Firewall for Public network profile
+  platforms:
+    - windows
+  categories:
+    - firewall
+    - network_security
+    - public
+  severity: critical
+  cis_benchmark: "9.1.3"
+  audit_command: "Get-NetFirewallProfile -Profile Public | Select-Object Enabled"
+  apply_command: "Set-NetFirewallProfile -Profile Public -Enabled True"
+
+- id: firewall_block_inbound_domain
+  title: Block Inbound Connections - Domain Profile
+  description: Set inbound connections to block by default for Domain profile
+  platforms:
+    - windows
+  categories:
+    - firewall
+    - network_security
+    - inbound_connections
+  severity: high
+  cis_benchmark: "9.1.4"
+  audit_command: "Get-NetFirewallProfile -Profile Domain | Select-Object DefaultInboundAction"
+  apply_command: "Set-NetFirewallProfile -Profile Domain -DefaultInboundAction Block"
+
+# Remote Access and Services
+- id: disable_remote_desktop
+  title: Disable Remote Desktop
+  description: Disable Remote Desktop Protocol (RDP) service
+  platforms:
+    - windows
+  categories:
+    - remote_access
+    - rdp
+    - services
+  severity: high
+  cis_benchmark: "18.9.48.3.1"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server' -Name fDenyTSConnections"
+  apply_command: "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server' -Name fDenyTSConnections -Value 1"
+  registry_keys:
+    - path: "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server"
+      name: "fDenyTSConnections"
+      value: 1
+      type: "DWORD"
+
+- id: disable_telnet_service
+  title: Disable Telnet Service
+  description: Ensure Telnet service is disabled
+  platforms:
+    - windows
+  categories:
+    - services
+    - remote_access
+    - network_protocols
+  severity: critical
+  cis_benchmark: "2.3.11.8"
+  audit_command: "Get-Service -Name TlntSvr | Select-Object Status, StartType"
+  apply_command: |
+    Stop-Service -Name TlntSvr -Force -ErrorAction SilentlyContinue
+    Set-Service -Name TlntSvr -StartupType Disabled -ErrorAction SilentlyContinue
+
+- id: disable_ftp_service
+  title: Disable FTP Service
+  description: Ensure FTP service is disabled
+  platforms:
+    - windows
+  categories:
+    - services
+    - file_transfer
+    - network_protocols
+  severity: high
+  cis_benchmark: "2.3.11.4"
+  audit_command: "Get-Service -Name FTPSVC | Select-Object Status, StartType"
+  apply_command: |
+    Stop-Service -Name FTPSVC -Force -ErrorAction SilentlyContinue
+    Set-Service -Name FTPSVC -StartupType Disabled -ErrorAction SilentlyContinue
+
+# Security Features and Protections
+- id: enable_defender_realtime
+  title: Enable Windows Defender Real-time Protection
+  description: Enable real-time malware scanning
+  platforms:
+    - windows
+  categories:
+    - antimalware
+    - defender
+    - real_time_protection
+  severity: critical
+  cis_benchmark: "18.9.39.2"
+  audit_command: "Get-MpPreference | Select-Object DisableRealtimeMonitoring"
+  apply_command: "Set-MpPreference -DisableRealtimeMonitoring $false"
+
+- id: enable_defender_cloud_protection
+  title: Enable Windows Defender Cloud Protection
+  description: Enable cloud-delivered protection service
+  platforms:
+    - windows
+  categories:
+    - antimalware
+    - defender
+    - cloud_protection
+  severity: high
+  cis_benchmark: "18.9.39.3"
+  audit_command: "Get-MpPreference | Select-Object MAPSReporting"
+  apply_command: "Set-MpPreference -MAPSReporting Advanced"
+
+- id: enable_controlled_folder_access
+  title: Enable Controlled Folder Access
+  description: Enable controlled folder access to protect against ransomware
+  platforms:
+    - windows
+  categories:
+    - antimalware
+    - ransomware_protection
+    - folder_protection
+  severity: high
+  cis_benchmark: "18.9.39.4"
+  audit_command: "Get-MpPreference | Select-Object EnableControlledFolderAccess"
+  apply_command: "Set-MpPreference -EnableControlledFolderAccess Enabled"
+
+# Network Security Settings
+- id: disable_netbios_over_tcpip
+  title: Disable NetBIOS over TCP/IP
+  description: Disable NetBIOS over TCP/IP to reduce attack surface
+  platforms:
+    - windows
+  categories:
+    - network
+    - protocols
+    - netbios
+  severity: medium
+  cis_benchmark: "18.5.9.1"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\services\\NetBT\\Parameters\\Interfaces\\*' -Name NetbiosOptions"
+  apply_command: |
+    $interfaces = Get-ChildItem -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\services\\NetBT\\Parameters\\Interfaces'
+    foreach ($interface in $interfaces) {
+        Set-ItemProperty -Path $interface.PSPath -Name NetbiosOptions -Value 2
+    }
+
+- id: disable_llmnr
+  title: Disable Link-Local Multicast Name Resolution
+  description: Disable LLMNR to prevent credential harvesting attacks
+  platforms:
+    - windows
+  categories:
+    - network
+    - name_resolution
+    - credential_protection
+  severity: high
+  cis_benchmark: "18.5.9.2"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\DNSClient' -Name EnableMulticast"
+  apply_command: |
+    New-Item -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\DNSClient' -Force
+    Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\DNSClient' -Name EnableMulticast -Value 0
+
+- id: disable_wpad
+  title: Disable Web Proxy Auto-Discovery
+  description: Disable WPAD to prevent proxy hijacking attacks
+  platforms:
+    - windows
+  categories:
+    - network
+    - proxy
+    - web_security
+  severity: medium
+  cis_benchmark: "18.5.9.3"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\WinHttp' -Name DisableWpad"
+  apply_command: "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\WinHttp' -Name DisableWpad -Value 1"

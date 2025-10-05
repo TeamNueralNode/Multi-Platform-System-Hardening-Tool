@@ -1,0 +1,285 @@
+rules:
+# Disable Unused Services
+- id: disable_unused_filesystems
+  title: Disable Unused Filesystems
+  description: Disable mounting of unused filesystem types for security
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - services
+    - filesystem
+    - kernel
+  severity: medium
+  cis_benchmark: "1.1.1"
+  backup_files:
+    - /etc/modprobe.d/blacklist-rare-filesystems.conf
+  config_files:
+    - /etc/modprobe.d/blacklist-rare-filesystems.conf
+  audit_command: "lsmod | grep -E '(cramfs|freevxfs|jffs2|hfs|hfsplus|squashfs|udf)'"
+  apply_command: |
+    cat > /etc/modprobe.d/blacklist-rare-filesystems.conf << 'EOF'
+    install cramfs /bin/true
+    install freevxfs /bin/true
+    install jffs2 /bin/true
+    install hfs /bin/true
+    install hfsplus /bin/true
+    install squashfs /bin/true
+    install udf /bin/true
+    EOF
+
+- id: disable_usb_storage
+  title: Disable USB Storage
+  description: Disable USB storage devices to prevent data exfiltration
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - services
+    - usb
+    - data_protection
+  severity: high
+  cis_benchmark: "1.1.24"
+  backup_files:
+    - /etc/modprobe.d/blacklist-usb.conf
+  config_files:
+    - /etc/modprobe.d/blacklist-usb.conf
+  audit_command: "lsmod | grep usb_storage"
+  apply_command: "echo 'install usb-storage /bin/true' > /etc/modprobe.d/blacklist-usb.conf"
+
+- id: disable_dccp_protocol
+  title: Disable DCCP Protocol
+  description: Disable Datagram Congestion Control Protocol (DCCP)
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - services
+    - network
+    - protocols
+  severity: medium
+  cis_benchmark: "3.4.1"
+  backup_files:
+    - /etc/modprobe.d/blacklist-dccp.conf
+  config_files:
+    - /etc/modprobe.d/blacklist-dccp.conf
+  audit_command: "lsmod | grep dccp"
+  apply_command: "echo 'install dccp /bin/true' > /etc/modprobe.d/blacklist-dccp.conf"
+
+- id: disable_sctp_protocol
+  title: Disable SCTP Protocol  
+  description: Disable Stream Control Transmission Protocol (SCTP)
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - services
+    - network
+    - protocols
+  severity: medium
+  cis_benchmark: "3.4.2"
+  backup_files:
+    - /etc/modprobe.d/blacklist-sctp.conf
+  config_files:
+    - /etc/modprobe.d/blacklist-sctp.conf
+  audit_command: "lsmod | grep sctp"
+  apply_command: "echo 'install sctp /bin/true' > /etc/modprobe.d/blacklist-sctp.conf"
+
+# System Services Hardening
+- id: disable_xinetd
+  title: Disable Xinetd Service
+  description: Ensure xinetd service is disabled
+  platforms:
+    - centos
+    - rhel
+  categories:
+    - services
+    - network
+  severity: high
+  cis_benchmark: "2.1.7"
+  audit_command: "systemctl is-enabled xinetd"
+  apply_command: "systemctl disable xinetd && systemctl stop xinetd"
+
+- id: disable_telnet_server
+  title: Disable Telnet Server
+  description: Ensure telnet server is not installed or disabled
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - services
+    - network
+    - remote_access
+  severity: critical
+  cis_benchmark: "2.3.4"
+  audit_command: "systemctl is-enabled telnet.socket inetd xinetd"
+  apply_command: |
+    systemctl disable telnet.socket 2>/dev/null || true
+    systemctl stop telnet.socket 2>/dev/null || true
+    apt-get remove -y telnetd 2>/dev/null || yum remove -y telnet-server 2>/dev/null || true
+
+- id: disable_ftp_server
+  title: Disable FTP Server
+  description: Ensure FTP server is not installed or disabled
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - services
+    - network
+    - file_transfer
+  severity: high
+  cis_benchmark: "2.3.2"
+  audit_command: "systemctl is-enabled vsftpd proftpd"
+  apply_command: |
+    systemctl disable vsftpd 2>/dev/null || true
+    systemctl stop vsftpd 2>/dev/null || true
+    systemctl disable proftpd 2>/dev/null || true
+    systemctl stop proftpd 2>/dev/null || true
+
+- id: disable_tftp_server
+  title: Disable TFTP Server
+  description: Ensure TFTP server is disabled
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - services
+    - network
+    - file_transfer
+  severity: high
+  cis_benchmark: "2.3.3"
+  audit_command: "systemctl is-enabled tftp"
+  apply_command: "systemctl disable tftp && systemctl stop tftp"
+
+# Process and Kernel Hardening
+- id: enable_aslr
+  title: Enable Address Space Layout Randomization
+  description: Enable ASLR to randomize memory layout
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - kernel
+    - memory_protection
+    - exploit_mitigation
+  severity: high
+  cis_benchmark: "1.5.4"
+  backup_files:
+    - /etc/sysctl.conf
+  config_files:
+    - /etc/sysctl.conf
+  audit_command: "sysctl kernel.randomize_va_space | grep '= 2'"
+  apply_command: "echo 'kernel.randomize_va_space = 2' >> /etc/sysctl.conf && sysctl -p"
+  expected_values:
+    kernel.randomize_va_space: "2"
+
+- id: disable_core_dumps
+  title: Disable Core Dumps
+  description: Disable core dumps to prevent information disclosure
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - kernel
+    - data_protection
+    - information_disclosure
+  severity: medium
+  cis_benchmark: "1.5.1"
+  backup_files:
+    - /etc/security/limits.conf
+    - /etc/sysctl.conf
+  config_files:
+    - /etc/security/limits.conf
+    - /etc/sysctl.conf
+  audit_command: |
+    grep -E '\\*.*hard.*core.*0' /etc/security/limits.conf &&
+    sysctl fs.suid_dumpable | grep '= 0'
+  apply_command: |
+    echo '* hard core 0' >> /etc/security/limits.conf
+    echo 'fs.suid_dumpable = 0' >> /etc/sysctl.conf
+    sysctl -p
+
+- id: enable_nx_protection
+  title: Enable NX/XD Protection
+  description: Ensure NX (No eXecute) bit is enabled in BIOS/UEFI
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - kernel
+    - memory_protection
+    - exploit_mitigation
+  severity: high
+  cis_benchmark: "1.5.2"
+  audit_command: "dmesg | grep -E '(NX|XD) protection'"
+  apply_command: "echo 'NX/XD protection should be enabled in BIOS/UEFI settings'"
+
+- id: restrict_kernel_log_access
+  title: Restrict Access to Kernel Logs
+  description: Restrict access to kernel logs via dmesg
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - kernel
+    - logging
+    - information_disclosure
+  severity: medium
+  cis_benchmark: "1.5.3"
+  backup_files:
+    - /etc/sysctl.conf
+  config_files:
+    - /etc/sysctl.conf
+  audit_command: "sysctl kernel.dmesg_restrict | grep '= 1'"
+  apply_command: "echo 'kernel.dmesg_restrict = 1' >> /etc/sysctl.conf && sysctl -p"
+
+# System Resource Limits
+- id: set_process_limits
+  title: Set System Process Limits
+  description: Configure system resource limits to prevent DoS
+  platforms:
+    - ubuntu
+    - centos
+    - debian
+    - rhel
+  categories:
+    - services
+    - resource_limits
+    - dos_protection
+  severity: medium
+  cis_benchmark: "1.5.5"
+  backup_files:
+    - /etc/security/limits.conf
+  config_files:
+    - /etc/security/limits.conf
+  audit_command: "grep -E '(nproc|nofile)' /etc/security/limits.conf"
+  apply_command: |
+    cat >> /etc/security/limits.conf << 'EOF'
+    * soft nproc 65536
+    * hard nproc 65536
+    * soft nofile 65536
+    * hard nofile 65536
+    EOF

@@ -1,18 +1,114 @@
 rules:
-- categories:
-  - smb
-  - network
-  cis_benchmark: 18.3.1
-  description: Disable the insecure SMBv1 protocol to prevent exploitation
-  expected_values:
-    SMB1Protocol: Disabled
-  id: smb_disable_v1
-  ntro_reference: 'Annexure-B: Network Protocol Security'
-  platforms:
-  - windows
-  remediation_steps:
-  - Open PowerShell as Administrator
-  - 'Run: Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart'
-  - Restart system when convenient
-  severity: critical
+# SMB Protocol Security
+- id: smb_disable_v1
   title: Disable SMBv1 Protocol
+  description: Disable the insecure SMBv1 protocol to prevent exploitation
+  platforms:
+    - windows
+  categories:
+    - smb
+    - network
+    - protocols
+  severity: critical
+  cis_benchmark: "18.3.1"
+  ntro_reference: "Annexure-B: Network Protocol Security"
+  audit_command: "Get-WindowsOptionalFeature -Online -FeatureName SMB1Protocol | Select-Object State"
+  apply_command: "Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart"
+  expected_values:
+    SMB1Protocol: "Disabled"
+  remediation_steps:
+    - "Open PowerShell as Administrator"
+    - "Run: Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart"
+    - "Restart system when convenient"
+
+- id: smb_enable_signing
+  title: Enable SMB Signing
+  description: Enable SMB packet signing to prevent tampering
+  platforms:
+    - windows
+  categories:
+    - smb
+    - network
+    - authentication
+  severity: high
+  cis_benchmark: "18.3.2"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters' -Name RequireSecuritySignature"
+  apply_command: "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters' -Name RequireSecuritySignature -Value 1"
+  registry_keys:
+    - path: "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters"
+      name: "RequireSecuritySignature"
+      value: 1
+      type: "DWORD"
+
+- id: smb_disable_guest_access
+  title: Disable SMB Guest Access
+  description: Disable guest access to SMB shares
+  platforms:
+    - windows
+  categories:
+    - smb
+    - access_control
+    - guest_accounts
+  severity: high
+  cis_benchmark: "18.3.3"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters' -Name RestrictNullSessAccess"
+  apply_command: "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters' -Name RestrictNullSessAccess -Value 1"
+  registry_keys:
+    - path: "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters"
+      name: "RestrictNullSessAccess"
+      value: 1
+      type: "DWORD"
+
+- id: smb_encrypt_data
+  title: Enable SMB Encryption
+  description: Enable SMB encryption for data in transit
+  platforms:
+    - windows
+  categories:
+    - smb
+    - encryption
+    - data_protection
+  severity: high
+  cis_benchmark: "18.3.4"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters' -Name RequireSecuritySignature"
+  apply_command: |
+    Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters' -Name EncryptData -Value 1
+    Set-SmbServerConfiguration -EncryptData $true -Force
+
+- id: smb_disable_null_sessions
+  title: Disable SMB Null Sessions
+  description: Disable null session access to SMB shares
+  platforms:
+    - windows
+  categories:
+    - smb
+    - access_control
+    - anonymous_access
+  severity: high
+  cis_benchmark: "2.3.1.1"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa' -Name RestrictAnonymous"
+  apply_command: "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa' -Name RestrictAnonymous -Value 2"
+  registry_keys:
+    - path: "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa"
+      name: "RestrictAnonymous"
+      value: 2
+      type: "DWORD"
+
+- id: smb_limit_anonymous_enum
+  title: Limit Anonymous Enumeration via SMB
+  description: Prevent anonymous enumeration of SAM accounts and shares
+  platforms:
+    - windows
+  categories:
+    - smb
+    - enumeration
+    - information_disclosure
+  severity: high
+  cis_benchmark: "2.3.1.2"
+  audit_command: "Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa' -Name RestrictAnonymousSAM"
+  apply_command: "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa' -Name RestrictAnonymousSAM -Value 1"
+  registry_keys:
+    - path: "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa"
+      name: "RestrictAnonymousSAM"
+      value: 1
+      type: "DWORD"

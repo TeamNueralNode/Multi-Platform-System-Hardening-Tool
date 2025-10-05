@@ -139,7 +139,7 @@ class DatabaseManager:
                 run.operation,
                 run.started_at.isoformat(),
                 run.completed_at.isoformat() if run.completed_at else None,
-                json.dumps(run.system_info.dict()),
+                json.dumps(run.system_info.model_dump(), default=self._json_serializer),
                 json.dumps(run.categories),
                 json.dumps(run.rule_ids),
                 run.total_rules,

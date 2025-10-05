@@ -21,7 +21,7 @@
 
 ## 🏗️ Architecture
 
-```
+```text
 hardening_tool/
 ├── core/              # Core orchestration and business logic
 ├── platforms/         # OS-specific hardening modules
@@ -90,6 +90,7 @@ hardening-tool rules show ssh_disable_root_login
 ### 📸 **Live Demo Results**
 
 **Security Audit Output (Real System):**
+
 ```console
 ╭────────────────────── System Information ──────────────────────────╮
 │ System Audit - Ubuntu                                               │
@@ -164,6 +165,7 @@ tool.apply(categories=['ssh', 'firewall'], create_rollback=True)
 ## 🔧 Configuration
 
 Configuration files are stored in:
+
 - Linux: `~/.config/hardening-tool/`
 - Windows: `%APPDATA%/hardening-tool/`
 
@@ -287,6 +289,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🎯 Roadmap
 
 ### ✅ **Completed (v1.0)**
+
 - [x] Multi-platform OS detection (Windows, Ubuntu, CentOS, Arch-compatible)
 - [x] Rule-driven YAML-based hardening system
 - [x] Professional CLI with Rich formatting
@@ -297,12 +300,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] Comprehensive error handling and safety checks
 
 ### 🚧 **In Development (v1.1)**
+
 - [ ] Additional CIS Benchmark rules (firewall, user policies)
 - [ ] Windows Registry hardening rules
 - [ ] Linux kernel parameter hardening
 - [ ] Custom rule creation wizard
 
 ### 🔮 **Future Releases**
+
 - [ ] Web-based dashboard (v2.0)
 - [ ] Integration with SIEM systems (v2.1)
 - [ ] Compliance framework extensions (NIST, ISO 27001) (v2.2)

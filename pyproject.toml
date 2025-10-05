@@ -81,6 +81,14 @@ disallow_untyped_defs = true
 [tool.hatch.build.targets.wheel]
 packages = ["hardening_tool"]
 
+[tool.hatch.build]
+include = [
+    "hardening_tool/**/*.py",
+    "hardening_tool/rules/definitions/*.yaml",
+    "hardening_tool/reporting/templates/*.html",
+    "hardening_tool/reporting/templates/*.css",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

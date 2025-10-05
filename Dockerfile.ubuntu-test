@@ -1,0 +1,49 @@
+# Ubuntu 20.04 Security Hardening Tool Test Environment
+FROM ubuntu:20.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    sudo \
+    openssh-server \
+    ufw \
+    auditd \
+    libpam-pwquality \
+    rsyslog \
+    systemd \
+    systemctl \
+    curl \
+    git \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create test user
+RUN useradd -m -s /bin/bash testuser && \
+    echo "testuser:testpass123" | chpasswd && \
+    usermod -aG sudo testuser
+
+# Setup SSH
+RUN mkdir -p /var/run/sshd && \
+    ssh-keygen -A
+
+# Setup systemd (required for some security tests)
+RUN systemctl set-default multi-user.target
+
+# Create workspace directory
+WORKDIR /workspace
+
+# Copy Python requirements and install
+COPY pyproject.toml ./
+RUN python3 -m pip install --upgrade pip
+
+# Expose SSH port for testing
+EXPOSE 22
+
+# Default command
+CMD ["/bin/bash"]

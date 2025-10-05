@@ -1,0 +1,18 @@
+# Test Results Collector Container
+FROM python:3.11-slim
+
+# Install docker CLI for container communication
+RUN apt-get update && apt-get install -y \
+    docker.io \
+    curl \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create workspace
+WORKDIR /workspace
+
+# Install Python dependencies for report generation
+RUN pip install --upgrade pip
+
+# Default command
+CMD ["/bin/bash"]

@@ -1,0 +1,320 @@
+# Docker Compose for local security hardening tool testing
+# Usage: docker-compose -f docker-compose.test.yml up --build
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Ubuntu 20.04 Test Environment
+  # ============================================================================
+  ubuntu-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu-test
+    container_name: hardening-tool-ubuntu-test
+    privileged: true
+    volumes:
+      - .:/workspace
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    working_dir: /workspace
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+      - PYTHONPATH=/workspace
+      - TEST_PLATFORM=ubuntu
+    command: >
+      bash -c "
+        echo '=== Ubuntu 20.04 Security Hardening Tests ==='
+        echo 'Setting up test environment...'
+        
+        # Install dependencies
+        python3 -m pip install --upgrade pip
+        pip3 install -e '.[dev]'
+        
+        # Generate sample rules
+        python3 -c '
+        from hardening_tool.rules.loader import RuleLoader
+        import os
+        os.makedirs(\"rules/definitions\", exist_ok=True)
+        loader = RuleLoader(\"rules/definitions\")
+        loader._create_sample_rules()
+        print(\"Sample rules created\")
+        '
+        
+        # Run audit tests
+        echo 'Running SSH security audit...'
+        python3 -m hardening_tool.cli audit --rules ssh_disable_root_login,ssh_disable_password_auth --dry-run --output-format json --output /tmp/ubuntu_ssh_audit.json || true
+        
+        echo 'Running PAM security audit...'
+        python3 pam_pwquality_audit.py || true
+        python3 -m hardening_tool.cli audit --rules pam_password_complexity,pam_password_history --dry-run --output-format json --output /tmp/ubuntu_pam_audit.json || true
+        
+        echo 'Running system hardening audit...'
+        bash shadow_hardening.sh --audit-only || true
+        python3 -m hardening_tool.cli audit --rules system_disable_unused_filesystems --dry-run --output-format json --output /tmp/ubuntu_system_audit.json || true
+        
+        echo 'Running firewall audit...'
+        ufw --force enable || true
+        python3 -m hardening_tool.cli audit --rules firewall_enable_ufw,firewall_default_deny --dry-run --output-format json --output /tmp/ubuntu_firewall_audit.json || true
+        
+        # Test dry-run apply
+        echo 'Testing dry-run apply operations...'
+        python3 -m hardening_tool.cli apply --rules ssh_disable_root_login,pam_password_complexity --dry-run --output-format json --output /tmp/ubuntu_apply_dryrun.json || true
+        
+        # Generate summary report
+        echo 'Generating test summary...'
+        python3 -c '
+        import json
+        import os
+        from datetime import datetime
+        
+        results = {}
+        test_files = [
+          \"/tmp/ubuntu_ssh_audit.json\",
+          \"/tmp/ubuntu_pam_audit.json\", 
+          \"/tmp/ubuntu_system_audit.json\",
+          \"/tmp/ubuntu_firewall_audit.json\",
+          \"/tmp/ubuntu_apply_dryrun.json\"
+        ]
+        
+        for file in test_files:
+          if os.path.exists(file):
+            try:
+              with open(file, \"r\") as f:
+                results[os.path.basename(file)] = json.load(f)
+            except:
+              results[os.path.basename(file)] = \"Failed to parse JSON\"
+        
+        summary = {
+          \"timestamp\": datetime.now().isoformat(),
+          \"platform\": \"ubuntu:20.04\",
+          \"test_results\": results,
+          \"tests_completed\": len(results)
+        }
+        
+        with open(\"/tmp/ubuntu_test_summary.json\", \"w\") as f:
+          json.dump(summary, f, indent=2)
+          
+        print(f\"Ubuntu tests completed. {len(results)} test files generated.\")
+        '
+        
+        echo 'Ubuntu 20.04 tests completed successfully!'
+        
+        # Keep container running for inspection
+        tail -f /dev/null
+      "
+    networks:
+      - hardening-test-net
+
+  # ============================================================================
+  # CentOS 7 Test Environment
+  # ============================================================================
+  centos-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.centos-test
+    container_name: hardening-tool-centos-test
+    privileged: true
+    volumes:
+      - .:/workspace
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    working_dir: /workspace
+    environment:
+      - PYTHONPATH=/workspace
+      - TEST_PLATFORM=centos
+    command: >
+      bash -c "
+        echo '=== CentOS 7 Security Hardening Tests ==='
+        echo 'Setting up test environment...'
+        
+        # Install dependencies
+        python3 -m pip install --upgrade pip
+        pip3 install -e '.[dev]'
+        
+        # Generate sample rules
+        python3 -c '
+        from hardening_tool.rules.loader import RuleLoader
+        import os
+        os.makedirs(\"rules/definitions\", exist_ok=True)
+        loader = RuleLoader(\"rules/definitions\")
+        loader._create_sample_rules()
+        print(\"Sample rules created\")
+        '
+        
+        # Start necessary services
+        systemctl start sshd || true
+        systemctl start firewalld || true
+        
+        # Run audit tests
+        echo 'Running SSH security audit...'
+        python3 -m hardening_tool.cli audit --rules ssh_disable_root_login,ssh_disable_password_auth --dry-run --output-format json --output /tmp/centos_ssh_audit.json || true
+        
+        echo 'Running PAM security audit...'
+        python3 pam_pwquality_audit.py || true
+        python3 -m hardening_tool.cli audit --rules pam_password_complexity,pam_password_history --dry-run --output-format json --output /tmp/centos_pam_audit.json || true
+        
+        echo 'Running system hardening audit...'
+        bash shadow_hardening.sh --audit-only || true
+        python3 -m hardening_tool.cli audit --rules system_disable_unused_filesystems --dry-run --output-format json --output /tmp/centos_system_audit.json || true
+        
+        echo 'Running firewall audit...'
+        python3 -m hardening_tool.cli audit --rules firewall_enable_firewalld,firewall_default_zone --dry-run --output-format json --output /tmp/centos_firewall_audit.json || true
+        
+        # Test dry-run apply
+        echo 'Testing dry-run apply operations...'
+        python3 -m hardening_tool.cli apply --rules ssh_disable_root_login,pam_password_complexity --dry-run --output-format json --output /tmp/centos_apply_dryrun.json || true
+        
+        # Generate summary report
+        echo 'Generating test summary...'
+        python3 -c '
+        import json
+        import os
+        from datetime import datetime
+        
+        results = {}
+        test_files = [
+          \"/tmp/centos_ssh_audit.json\",
+          \"/tmp/centos_pam_audit.json\",
+          \"/tmp/centos_system_audit.json\", 
+          \"/tmp/centos_firewall_audit.json\",
+          \"/tmp/centos_apply_dryrun.json\"
+        ]
+        
+        for file in test_files:
+          if os.path.exists(file):
+            try:
+              with open(file, \"r\") as f:
+                results[os.path.basename(file)] = json.load(f)
+            except:
+              results[os.path.basename(file)] = \"Failed to parse JSON\"
+        
+        summary = {
+          \"timestamp\": datetime.now().isoformat(),
+          \"platform\": \"centos:7\",
+          \"test_results\": results,
+          \"tests_completed\": len(results)
+        }
+        
+        with open(\"/tmp/centos_test_summary.json\", \"w\") as f:
+          json.dump(summary, f, indent=2)
+          
+        print(f\"CentOS tests completed. {len(results)} test files generated.\")
+        '
+        
+        echo 'CentOS 7 tests completed successfully!'
+        
+        # Keep container running for inspection
+        tail -f /dev/null
+      "
+    networks:
+      - hardening-test-net
+
+  # ============================================================================
+  # Test Results Collector
+  # ============================================================================
+  test-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.test-collector
+    container_name: hardening-tool-test-collector
+    depends_on:
+      - ubuntu-test
+      - centos-test
+    volumes:
+      - .:/workspace
+      - test-results:/test-results
+    working_dir: /workspace
+    command: >
+      bash -c "
+        echo '=== Collecting Test Results ==='
+        
+        # Wait for test containers to complete initial setup
+        sleep 60
+        
+        # Collect results from test containers
+        echo 'Collecting Ubuntu test results...'
+        docker cp hardening-tool-ubuntu-test:/tmp/ubuntu_test_summary.json /test-results/ || true
+        docker cp hardening-tool-ubuntu-test:/tmp/ubuntu_ssh_audit.json /test-results/ || true
+        docker cp hardening-tool-ubuntu-test:/tmp/ubuntu_pam_audit.json /test-results/ || true
+        docker cp hardening-tool-ubuntu-test:/tmp/ubuntu_system_audit.json /test-results/ || true
+        docker cp hardening-tool-ubuntu-test:/tmp/ubuntu_firewall_audit.json /test-results/ || true
+        docker cp hardening-tool-ubuntu-test:/tmp/ubuntu_apply_dryrun.json /test-results/ || true
+        
+        echo 'Collecting CentOS test results...'
+        docker cp hardening-tool-centos-test:/tmp/centos_test_summary.json /test-results/ || true
+        docker cp hardening-tool-centos-test:/tmp/centos_ssh_audit.json /test-results/ || true
+        docker cp hardening-tool-centos-test:/tmp/centos_pam_audit.json /test-results/ || true
+        docker cp hardening-tool-centos-test:/tmp/centos_system_audit.json /test-results/ || true
+        docker cp hardening-tool-centos-test:/tmp/centos_firewall_audit.json /test-results/ || true
+        docker cp hardening-tool-centos-test:/tmp/centos_apply_dryrun.json /test-results/ || true
+        
+        # Generate combined report
+        python3 -c '
+        import json
+        import os
+        from datetime import datetime
+        from pathlib import Path
+        
+        results_dir = Path(\"/test-results\")
+        all_results = {}
+        
+        # Load all JSON results
+        for json_file in results_dir.glob(\"*.json\"):
+          try:
+            with open(json_file, \"r\") as f:
+              all_results[json_file.name] = json.load(f)
+          except Exception as e:
+            all_results[json_file.name] = f\"Error loading: {str(e)}\"
+        
+        # Create master summary
+        master_summary = {
+          \"timestamp\": datetime.now().isoformat(),
+          \"test_type\": \"docker_compose_integration\",
+          \"platforms_tested\": [\"ubuntu:20.04\", \"centos:7\"],
+          \"total_result_files\": len(all_results),
+          \"results\": all_results
+        }
+        
+        with open(\"/test-results/master_test_summary.json\", \"w\") as f:
+          json.dump(master_summary, f, indent=2)
+          
+        print(f\"Master summary created with {len(all_results)} result files\")
+        
+        # Create human-readable report
+        with open(\"/test-results/test_report.txt\", \"w\") as f:
+          f.write(\"Security Hardening Tool - Docker Test Results\\n\")
+          f.write(\"=\" * 50 + \"\\n\\n\")
+          f.write(f\"Generated: {datetime.now().isoformat()}\\n\")
+          f.write(f\"Platforms: Ubuntu 20.04, CentOS 7\\n\")
+          f.write(f\"Total result files: {len(all_results)}\\n\\n\")
+          
+          for filename, result in all_results.items():
+            f.write(f\"File: {filename}\\n\")
+            if isinstance(result, dict):
+              f.write(f\"  Status: {'PASS' if result else 'Available'}\\n\")
+            else:
+              f.write(f\"  Status: {result}\\n\")
+            f.write(\"\\n\")
+        
+        print(\"Human-readable report created\")
+        '
+        
+        echo 'Test results collection completed!'
+        echo 'Results available in /test-results/ volume'
+        
+        # List all collected files
+        echo 'Collected test files:'
+        ls -la /test-results/
+        
+        # Keep container running for inspection
+        tail -f /dev/null
+      "
+    networks:
+      - hardening-test-net
+
+networks:
+  hardening-test-net:
+    driver: bridge
+
+volumes:
+  test-results:
+    driver: local

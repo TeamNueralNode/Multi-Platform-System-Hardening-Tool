@@ -1,0 +1,39 @@
+rules:
+- backup_files:
+  - /etc/ssh/sshd_config
+  categories:
+  - ssh
+  - authentication
+  cis_benchmark: 5.2.8
+  config_files:
+  - /etc/ssh/sshd_config
+  description: Disable direct root login via SSH to prevent unauthorized access
+  expected_values:
+    PermitRootLogin: 'no'
+  id: ssh_disable_root_login
+  ntro_reference: 'Annexure-A: SSH Hardening'
+  platforms:
+  - ubuntu
+  - centos
+  remediation_steps:
+  - Edit /etc/ssh/sshd_config
+  - Set 'PermitRootLogin no'
+  - Restart SSH service
+  severity: high
+  title: Disable SSH Root Login
+- apply_command: sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/'
+    /etc/ssh/sshd_config && systemctl reload sshd
+  audit_command: grep -E '^\s*PasswordAuthentication\s+no' /etc/ssh/sshd_config
+  categories:
+  - ssh
+  - authentication
+  cis_benchmark: 5.2.10
+  config_files:
+  - /etc/ssh/sshd_config
+  description: Force SSH key-based authentication only
+  id: ssh_disable_password_auth
+  platforms:
+  - ubuntu
+  - centos
+  severity: medium
+  title: Disable SSH Password Authentication

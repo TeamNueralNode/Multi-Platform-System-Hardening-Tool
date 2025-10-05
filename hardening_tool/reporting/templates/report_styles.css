@@ -1,0 +1,29 @@
+
+        @page {
+            size: A4;
+            margin: 1in;
+        }
+        
+        body {
+            font-family: 'DejaVu Sans', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .container {
+            max-width: none;
+            margin: 0;
+            padding: 0;
+            background: white;
+            box-shadow: none;
+            border-radius: 0;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .no-break {
+            page-break-inside: avoid;
+        }
+        

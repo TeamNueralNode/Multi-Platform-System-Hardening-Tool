@@ -141,6 +141,10 @@ def _determine_linux_type(os_info: dict) -> OSType:
     elif any(distro in id_like for distro in ["rhel", "fedora", "centos"]):
         return OSType.CENTOS
     
+    # For demonstration: Treat Arch Linux as Ubuntu-compatible (both use systemd)
+    if "arch" in id_field:
+        return OSType.UBUNTU
+    
     # If we can't determine, return UNKNOWN
     return OSType.UNKNOWN
 

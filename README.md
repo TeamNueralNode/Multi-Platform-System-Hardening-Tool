@@ -15,7 +15,7 @@
 - **📏 CIS Benchmark Compliance**: Implements security hardening based on CIS standards
 - **🔍 Comprehensive Auditing**: Before/after compliance reporting with detailed analysis
 - **🔄 Safe Rollback**: Encrypted rollback points for safe configuration restoration
-- **🖥️ Dual Interface**: Professional CLI with Rich formatting + Flask web GUI
+- **🖥️ Triple Interface**: Professional CLI with Rich formatting + Flask web GUI + Native desktop GUI
 - **📊 Professional Reporting**: PDF/HTML reports with compliance scoring and remediation steps
 - **🔒 Enterprise Security**: Encrypted backups, admin privilege checks, and secure handling
 - **🔧 Developer Friendly**: Modular architecture, comprehensive testing, automated builds
@@ -167,6 +167,25 @@ hardening-tool rules show ssh_disable_root_login  # Show detailed rule info
 # Reporting
 hardening-tool report --format pdf --output security_audit.pdf
 hardening-tool report --format html --output report.html
+```
+
+### 🖥️ Desktop GUI
+
+```bash
+# Standard user mode (audit, dry-run, reporting)
+python3 desktop_gui.py
+./launch_gui.sh
+
+# Administrator mode (full hardening capabilities)
+sudo python3 desktop_gui.py
+sudo ./launch_gui.sh
+
+# Interactive privilege demo
+./demo_privileges.sh
+
+# Features: Native desktop interface, intelligent privilege handling, 
+#           comprehensive help system, safe operation modes
+# Requirements: python3-tk package (sudo apt install python3-tk)
 ```
 
 ### 🌐 Web Interface
@@ -371,7 +390,9 @@ The codebase is professionally organized for maintainability and scalability:
 ├── 🔧 utilities/               # Standalone utility scripts  
 ├── 📖 docs/                    # Project documentation
 ├── 🌐 gui.py                   # Flask web interface
-├── 🔨 build_release.sh         # Automated release building
+├── �️ desktop_gui.py           # Desktop GUI application (tkinter)
+├── 🚀 launch_gui.sh            # Desktop GUI launcher script
+├── �🔨 build_release.sh         # Automated release building
 ├── 🧪 setup_and_test.py        # Setup validation and testing
 └── 🐳 docker-compose.test.yml  # Multi-platform testing
 ```
